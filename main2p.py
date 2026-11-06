@@ -76,6 +76,7 @@
 
 
 from fastapi import FastAPI, HTTPException
+from typing import Any
 
 app = FastAPI()
 
@@ -83,7 +84,7 @@ app = FastAPI()
 def root():
     return {"Welcome": "Welcome to the API demonstration"}
 
-orders = {
+orders: dict[int, dict[str, Any]] = {
     101: {
         "product": "Keyboard",
         "status": "On the way",
@@ -105,21 +106,128 @@ orders = {
 def get_hello():
     return {"message": "this is a hello message"}
 
-@app.get("/order")
-def stat():
-    return "To check Order status, enter order number followed by /order/your_number."
 
-@app.get("/order/{order_id}")
-def get_order_status(order_id: int):
+@app.get("/orders/{sec}")
+def get_order_stat(sec: str, order_id: int):
     if order_id not in orders:
+        raise HTTPException(
+            status_code= 404,
+            detail = "order not found",
+        )
+
+    if sec not in orders[order_id]:
+        raise HTTPException(
+            status_code = 404,
+            detail = "order not found"
+        )
+
+    return{
+        sec: orders[order_id][sec]
+    }
+
+# @app.get("/orders/{sec}")
+# def prac_endpoint(sec: str,order_id:int) -> dict[str,Any]:
+    
+#     if order_id not in orders:
+#         raise HTTPException(
+#             status_code = 404,
+#             detail = "error",
+#         )
+
+#     if sec not in orders[order_id]:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="Field not found",
+#         )
+#     return {
+#         sec: orders[order_id][sec]
+#     }
+
+@app.post("/orders")
+def create_new_id( data : dict[str, Any]) ->dict[str, int]:
+
+    req_fields = ["name","price","stock"]
+
+    for field in req_fields:
+        if field not in data:
+            raise HTTPException(
+                status_code= 400,
+                detail=f"{field} not found",
+                )
+
+    name = data["name"]
+    price = data["price"]
+    stock = data["stock"]
+
+    if not isinstance(stock, int) or stock <0:
         raise HTTPException(
             status_code=404,
             detail="Order not found",
         )
-    return {
-        "order_id": order_id,
-        "product": orders[order_id]["product"],
-        "status" : orders[order_id]["status"],
-        "city" : orders[order_id]["city"]
+ 
+    new_id = max(orders.keys()) + 1
+
+    orders[new_id] = {
+        "name" : name, 
+        "price" : price, 
+        "stock": stock
     }
+
+    return {"order_id": new_id}
+
+@app.get("/orders")
+def get_orders():
+
+    return{
+        "orders" : orders
+    }
+
+
+
+# @app.get("/orders")
+# def get_order_status(order_id: int | None = None) -> dict[str, Any]:
+
+#     if order_id is None:
+#         order_id = max(orders)
+    
+#     if order_id not in orders:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="Order not found",
+#         )
+#     else:
+#         return orders[order_id]
+    #     return{
+    #     "order_id": order_id,
+    #     "product": orders[order_id]["product"],
+    #     "status" : orders[order_id]["status"],
+    #     "city" : orders[order_id]["city"]
+    # }
+
+@app.post("/orders")
+def create_order(name: str, data: dict[str, Any]) -> dict[str,int]:
+
+    price = data["price"]
+    stock = data["stock"]
+
+    if not isinstance(price, (int, float)):
+        raise HTTPException(
+            status_code = 404,
+            detail = "Price should be a number",
+        )
+    if name.isdigit():
+        raise HTTPException(
+            status_code = 400,
+            detail = "The name section should contain words!"
+        )
+
+    new_id = max(orders.keys()) + 1
+
+    orders[new_id] = {
+        "name" : name, 
+        "price" : price, 
+        "stock": stock
+    }
+
+    return {"order_id": new_id}
 
