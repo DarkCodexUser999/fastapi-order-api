@@ -100,6 +100,11 @@ orders: dict[int, dict[str, Any]] = {
         "status": "Processing",
         "city": "Delhi",
     },
+    105: {
+            "product": "Mac",
+            "status": "Processing",
+            "city": "Banglore",
+        },
 }
 
 @app.get("/hello")
@@ -230,4 +235,51 @@ def create_order(name: str, data: dict[str, Any]) -> dict[str,int]:
     }
 
     return {"order_id": new_id}
+
+@app.put("/orders")
+def replace_order(product: str, status: str, city: str , order_id: int) ->dict[str, Any]:
+
+    if order_id not in orders:
+        raise HTTPException(
+            status_code = 400,
+            detail = "order_id is invalid "
+            )
+
+    order = orders[order_id]
+
+    orders[order_id]={
+        "product" : product, "status": status, "city": city
+       }
+
+    return orders[order_id]
+
+@app.patch("/orders")
+def replace_ind(order_id: int, body: dict[str, Any],
+                # product: str | None = None,
+                # status: str | None = None,
+                # city: str | None = None,
+                ) ->dict[str, Any]:
+    
+    if order_id not in orders:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # order= orders[order_id]
+
+    # if product is not None:
+    #     order["product"] = product
+
+    # if status is not None:()
+    #     order["status"] = status
+
+    # if city is not None:
+    #     order["city"] = city
+
+    orders[order_id].update(body)
+    return orders[order_id]
+
+@app.delete("/orders")
+def delete_order(order_id: int) -> dict[str, Any]:
+
+    del orders[order_id]
+    return { "status": f"Order {order_id} has been deleted successfully!"}
 
